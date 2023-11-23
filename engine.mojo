@@ -257,13 +257,13 @@ struct Position:
 
 
 def get_tp_score_key(pos: Position, depth: Int, can_null: Bool) -> (String, Int, Bool, Bool, Bool, Bool, Int, Int, Int, Bool):
-    return (pos.board, pos.score, pos.wc.get[0, Bool](), pos.wc.get[1, Bool](), pos.bc.get[0, Bool](), pos.bc.get[1, Bool](), pos.ep, pos.kp, depth, can_null)
+    return pos.board, pos.score, pos.wc.get[0, Bool](), pos.wc.get[1, Bool](), pos.bc.get[0, Bool](), pos.bc.get[1, Bool](), pos.ep, pos.kp, depth, can_null
 
 def get_tp_move_key(pos: Position) -> (String, Int, Bool, Bool, Bool, Bool, Int, Int):
-    return (pos.board, pos.score, pos.wc.get[0, Bool](), pos.wc.get[1, Bool](), pos.bc.get[0, Bool](), pos.bc.get[1, Bool](), pos.ep, pos.kp)
+    return pos.board, pos.score, pos.wc.get[0, Bool](), pos.wc.get[1, Bool](), pos.bc.get[0, Bool](), pos.bc.get[1, Bool](), pos.ep, pos.kp
 
 def get_history_key(pos: Position) -> (String, Int, Bool, Bool, Bool, Bool, Int, Int):
-    return (pos.board, pos.score, pos.wc.get[0, Bool](), pos.wc.get[1, Bool](), pos.bc.get[0, Bool](), pos.bc.get[1, Bool](), pos.ep, pos.kp)
+    return pos.board, pos.score, pos.wc.get[0, Bool](), pos.wc.get[1, Bool](), pos.bc.get[0, Bool](), pos.bc.get[1, Bool](), pos.ep, pos.kp
 
 def py_history_to_history(pos: PythonObject) -> Position:
     return Position(
@@ -277,7 +277,7 @@ def py_history_to_history(pos: PythonObject) -> Position:
 
 def py_move_to_move(move: PythonObject) -> (Int, Int, StringLiteral):
     var prom:   StringLiteral  = rebind[StringLiteral, Int](move[2].to_float64().to_int())
-    return (move[0].to_float64().to_int(), move[1].to_float64().to_int(),prom)
+    return move[0].to_float64().to_int(), move[1].to_float64().to_int(), prom
 
 # lower <= s(pos) <= upper
 struct Searcher:
@@ -349,7 +349,7 @@ struct Searcher:
             if best >= gamma:
                 # Save the move for pv construction and killer heuristic
                 if move.get[2, StringLiteral]():
-                    var key: (String, Int, Bool, Bool, Bool, Bool, Int, Int) = get_tp_move_key(pos)
+                    var key: Tuple[String, Int, Bool, Bool, Bool, Bool, Int, Int] = get_tp_move_key(pos)
                     tp_move.__setitem__(key, (
                         move.get[0, Int](),
                         move.get[1, Int](),
@@ -510,7 +510,7 @@ struct Searcher:
                 upper = score
             var new_pos: Position = py_history_to_history(history[py.len(history) - 1])
             var key: Tuple[String, Int, Bool, Bool, Bool, Bool, Int, Int] = get_tp_move_key(new_pos)
-            var move_py: PythonObject = self.tp_move.__getitem__(key)
+            var move_py: PythonObject = self.tp_move.get(key)
             var move: (Int, Int, StringLiteral) = py_move_to_move(move_py)
             # print(depth, gamma, score, move)
             print(depth, gamma, score, move_py)

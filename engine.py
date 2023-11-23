@@ -217,7 +217,7 @@ class Searcher:
             if best >= gamma:
                 # Save the move for pv construction and killer heuristic
                 if move is not None:
-                    self.tp_move[get_tp_move_key(pos)] = move
+                    self.tp_move.__setitem__(get_tp_move_key(pos), move)
                 return True
             return False
 

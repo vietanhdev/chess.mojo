@@ -35,7 +35,6 @@ def switchcase(c: Int) -> Int:
 
 def swapboard(board: String) -> String:
     """Reverse and swap the case of a board."""
-    if board == "": return ""
     var ret: String = ""
     for i in range(len(board) - 1, -1, -1):
         c = board[i]
@@ -191,48 +190,7 @@ struct Position:
             119 - self.kp if self.kp and not nullmove else 0,
         )
 
-    def move(self, move: (Int, Int, Int)) -> Position:
-        var i: Int = move.get[0, Int]()
-        var j: Int = move.get[1, Int]()
-        var prom: String = chr(move.get[2, Int]())
-        var p: String = self.board[i]
-        var q: String = self.board[j]
-        def put(board: String, i: Int, p: String) -> String:
-            return board[:i] + p + board[i + 1 :]
-        # Copy variables and reset ep and kp
-        var board = self.board
-        var wc: (Int, Int) = self.wc
-        var bc: (Int, Int) = self.bc
-        var ep: Int = 0
-        var kp: Int = 0
-        var score: Int = self.score + self.value(move)
-        # Actual move
-        board = put(board, j, board[i])
-        board = put(board, i, ".")
-        # Castling rights, we move the rook or capture the opponent's
-        if i == self.A1: wc = (0, wc.get[1, Int]())
-        if i == self.H1: wc = (wc.get[0, Int](), 0)
-        if j == self.A8: bc = (bc.get[0, Int](), 0)
-        if j == self.H8: bc = (0, bc.get[1, Int]())
-        # Castling
-        if p == "K":
-            wc = (0, 0)
-            if abs(j - i) == 2:
-                kp = (i + j) // 2
-                board = put(board, self.A1 if j < i else self.H1, ".")
-                board = put(board, kp, "R")
-        # Pawn promotion, double move and en passant capture
-        if p == "P":
-            if self.A8 <= j <= self.H8:
-                board = put(board, j, prom)
-            if j - i == 2 * self.direction_N:
-                ep = i + self.direction_N
-            if j == self.ep:
-                board = put(board, j + self.direction_S, ".")
-        # We rotate the returned position, so it's ready for the next player
-        return Position(board, score, wc, bc, ep, kp).rotate()
-
-    def value(inout self, move: (Int, Int, Int)) -> Int:
+    def value(self, move: (Int, Int, Int)) -> Int:
         let pst = Python.dict()
         pst["P"] = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 100, 100, 100, 100, 100, 100, 100, 0, 0, 178, 183, 186, 173, 202, 182, 185, 190, 0, 0, 107, 129, 121, 144, 140, 131, 144, 107, 0, 0, 83, 116, 98, 115, 114, 100, 115, 87, 0, 0, 74, 103, 110, 109, 106, 101, 100, 77, 0, 0, 78, 109, 105, 89, 90, 98, 103, 81, 0, 0, 69, 108, 93, 63, 64, 86, 103, 69, 0, 0, 100, 100, 100, 100, 100, 100, 100, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         pst["N"] = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 214, 227, 205, 205, 270, 225, 222, 210, 0, 0, 277, 274, 380, 244, 284, 342, 276, 266, 0, 0, 290, 347, 281, 354, 353, 307, 342, 278, 0, 0, 304, 304, 325, 317, 313, 321, 305, 297, 0, 0, 279, 285, 311, 301, 302, 315, 282, 280, 0, 0, 262, 290, 293, 302, 298, 295, 291, 266, 0, 0, 257, 265, 282, 280, 282, 280, 257, 260, 0, 0, 206, 257, 254, 256, 261, 245, 258, 211, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
@@ -267,6 +225,49 @@ struct Position:
             if j == self.ep:
                 score += pst["P"][119 - (j + self.direction_S)].to_float64().to_int() # TODO: Fix it
         return score
+
+    def move(self, move: (Int, Int, Int)) -> Position:
+        var i: Int = move.get[0, Int]()
+        var j: Int = move.get[1, Int]()
+        var prom: String = chr(move.get[2, Int]())
+        var p: String = self.board[i]
+        var q: String = self.board[j]
+        def put(board: String, i: Int, p: String) -> String:
+            return board[:i] + p + board[i + 1 :]
+        # Copy variables and reset ep and kp
+        var board = self.board
+        var wc: (Int, Int) = self.wc
+        var bc: (Int, Int) = self.bc
+        var ep: Int = 0
+        var kp: Int = 0
+        var score: Int = self.score + self.value(move)
+
+        # Actual move
+        board = put(board, j, board[i])
+        board = put(board, i, ".")
+        # Castling rights, we move the rook or capture the opponent's
+        if i == self.A1: wc = (0, wc.get[1, Int]())
+        if i == self.H1: wc = (wc.get[0, Int](), 0)
+        if j == self.A8: bc = (bc.get[0, Int](), 0)
+        if j == self.H8: bc = (0, bc.get[1, Int]())
+        # Castling
+        if p == "K":
+            wc = (0, 0)
+            if abs(j - i) == 2:
+                kp = (i + j) // 2
+                board = put(board, self.A1 if j < i else self.H1, ".")
+                board = put(board, kp, "R")
+        # Pawn promotion, double move and en passant capture
+        if p == "P":
+            if self.A8 <= j <= self.H8:
+                board = put(board, j, prom)
+            if j - i == 2 * self.direction_N:
+                ep = i + self.direction_N
+            if j == self.ep:
+                board = put(board, j + self.direction_S, ".")
+        # We rotate the returned position, so it's ready for the next player
+        return Position(board, score, wc, bc, ep, kp).rotate()
+
 
 def board_str_to_numbers(board: String) -> (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int):
     """Encode 120 char board to 30 Ints with 32 bits each."""
@@ -628,8 +629,8 @@ def main():
                 var ply: Int = 0
                 for ii in range(3, argc):
                     move = args[ii]
-                    let move_0: String = parse(chr(py.ord(move[0]).to_float64().to_int()) + chr(py.ord(move[1]).to_float64().to_int()))
-                    let move_1: String = parse(chr(py.ord(move[2]).to_float64().to_int()) + chr(py.ord(move[3]).to_float64().to_int()))
+                    let move_0: String = chr(py.ord(move[0]).to_float64().to_int()) + chr(py.ord(move[1]).to_float64().to_int())
+                    let move_1: String = chr(py.ord(move[2]).to_float64().to_int()) + chr(py.ord(move[3]).to_float64().to_int())
                     var i: Int = parse(move_0)
                     var j: Int = parse(move_1)
                     var prom: Int = 0
@@ -639,7 +640,9 @@ def main():
                         i = 119 - i
                         j = 119 - j
                         let last_pos: PythonObject = hist[py.len(hist) - 1]
-                        hist.append(get_history_key(py_position_to_position(last_pos).move((i, j, prom))))
+                        var new_pos: Position = py_position_to_position(last_pos)
+                        new_pos = new_pos.move((i, j, prom))
+                        hist.append(get_history_key(new_pos))
                     ply += 1
             elif args[0] == "go":
                 # var wtime: Int = 2000,btime, winc, binc = [int(a) / 1000 for a in args[2::2]]

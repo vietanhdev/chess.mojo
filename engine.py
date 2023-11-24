@@ -377,6 +377,7 @@ def uci():
         "         \n"  # 110 -119
     )
     hist = [Position(initial, 0, (True, True), (True, True), 0, 0)]
+    print(initial[37])
     while True:
         try:
             args = input()
@@ -444,4 +445,25 @@ def main():
             print(ret[1])
     else:
         uci()
-main()
+# main()
+
+
+print(parse("g7"))
+print(parse("g5"))
+
+initial = (
+    "         \n"  #   0 -  9
+    "         \n"  #  10 - 19
+    " rnbqkbnr\n"  #  20 - 29
+    " pppppppp\n"  #  30 - 39
+    " ........\n"  #  40 - 49
+    " ........\n"  #  50 - 59
+    " ........\n"  #  60 - 69
+    " ........\n"  #  70 - 79
+    " PPPPPPPP\n"  #  80 - 89
+    " RNBQKBNR\n"  #  90 - 99
+    "         \n"  # 100 -109
+    "         \n"  # 110 -119
+)
+hist = [Position(initial, 0, (True, True), (True, True), 0, 0)]
+print(initial[37])

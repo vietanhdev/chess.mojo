@@ -160,15 +160,18 @@ struct Position:
                             generated_moves.push_back((i, j, ord("Q")))
                             break
                     # Move it
-                    generated_moves.push_back((i, j, ord(" ")))
+                    generated_moves.push_back((i, j, 0))
                     # Stop crawlers from sliding, and sliding after captures
                     if (p == "P" or p == "N" or p == "K") or islower(q):
                         break
                     # Castling, by sliding the rook next to the king
                     if i == self.A1 and self.board[j + E] == "K" and self.wc.get[0, Int]():
-                        generated_moves.push_back((j + E, j + W, ord(" ")))
+                        generated_moves.push_back((j + E, j + W, 0))
                     if i == self.H1 and self.board[j + W] == "K" and self.wc.get[1, Int]():
-                        generated_moves.push_back((j + W, j + E, ord(" ")))
+                        generated_moves.push_back((j + W, j + E, 0))
+        print("Moves", len(generated_moves))
+        for i in range(len(generated_moves)):
+            print_move(generated_moves[i])
         return generated_moves
 
     def rotate(self, nullmove=False) -> Position:
@@ -261,13 +264,25 @@ def board_str_to_numbers(board: String) -> (Int, Int, Int, Int, Int, Int, Int, I
     # TODO: Encode the chessboard more efficiently
     var ret: DynamicVector[Int] = DynamicVector[Int]()
     for i in range(len(board)//4):
-        let c1: String = board[i*2]
-        let c2: String = board[i*2 + 1]
-        let c3: String = board[i*2 + 2]
-        let c4: String = board[i*2 + 3]
+        let c1: String = board[i*4]
+        let c2: String = board[i*4 + 1]
+        let c3: String = board[i*4 + 2]
+        let c4: String = board[i*4 + 3]
         let n: Int = ord(c1) + ord(c2) * 256 + ord(c3) * 65536 + ord(c4) * 16777216
         ret.push_back(n)
     return (ret[0], ret[1], ret[2], ret[3], ret[4], ret[5], ret[6], ret[7], ret[8], ret[9], ret[10], ret[11], ret[12], ret[13], ret[14], ret[15], ret[16], ret[17], ret[18], ret[19], ret[20], ret[21], ret[22], ret[23], ret[24], ret[25], ret[26], ret[27], ret[28], ret[29])
+
+def numbers_to_board_str(board: DynamicVector[Int]) -> String:
+    """Decode 30 Ints with 32 bits each to 120 char board."""
+    var ret: String = ""
+    for i in range(len(board)):
+        let n: Int = board[i]
+        let c1: String = chr(n % 256)
+        let c2: String = chr((n // 256) % 256)
+        let c3: String = chr((n // 65536) % 256)
+        let c4: String = chr((n // 16777216) % 256)
+        ret += c1 + c2 + c3 + c4
+    return ret
 
 def get_tp_score_key(pos: Position, depth: Int, can_null: Int) -> (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int):
     let e = board_str_to_numbers(pos.board)
@@ -288,17 +303,26 @@ def get_history_key(pos: Position) -> (Int, Int, Int, Int, Int, Int, Int, Int, I
     )
 
 def py_position_to_position(pos: PythonObject) -> Position:
+    var board_numbers = DynamicVector[Int]()
+    for i in range(30):
+        board_numbers.push_back(pos[i].to_float64().to_int()) # TODO: Fix it
+    let board = numbers_to_board_str(board_numbers)
+    # score: Int, wc: (Int, Int), bc: (Int, Int), ep: Int, kp: Int
     return Position(
-        pos[0].to_float64().to_int(), # TODO: Fix it
-        pos[1].to_float64().to_int(), # TODO: Fix it
-        (pos[2].to_float64().to_int(), pos[3].to_float64().to_int()),
-        (pos[4].to_float64().to_int(), pos[5].to_float64().to_int()),
-        pos[6].to_float64().to_int(), # TODO: Fix it
-        pos[7].to_float64().to_int(), # TODO: Fix it
+        board,
+        pos[30].to_float64().to_int(), # TODO: Fix it
+        (pos[31].to_float64().to_int(), pos[32].to_float64().to_int()), # TODO: Fix it
+        (pos[33].to_float64().to_int(), pos[34].to_float64().to_int()), # TODO: Fix it
+        pos[35].to_float64().to_int(), # TODO: Fix it
+        pos[36].to_float64().to_int(), # TODO: Fix it
     )
 
 def py_move_to_move(move: PythonObject) -> (Int, Int, Int):
     return move[0].to_float64().to_int(), move[1].to_float64().to_int(), move[2].to_float64().to_int() # TODO: Fix it
+
+def print_move(move: (Int, Int, Int)):
+    let a: String =  render(move.get[0, Int]()) + render(move.get[1, Int]()) + lower(chr(move.get[2, Int]()))
+    print(a)
 
 # lower <= s(pos) <= upper
 struct Searcher:
@@ -369,7 +393,7 @@ struct Searcher:
             best = max(best, score)
             if best >= gamma:
                 # Save the move for pv construction and killer heuristic
-                if move.get[2, Int]() != ord(" "):
+                if move.get[2, Int]() != 0:
                     let key = get_tp_move_key(pos)
                     tp_move.__setitem__(key, (
                         move.get[0, Int](),
@@ -391,25 +415,26 @@ struct Searcher:
         var should_stop: Bool = False
         if depth > 2 and can_null and abs(pos.score) < 500:
             var score_1: Int = self.bound(pos.rotate(nullmove=True), 1 - gamma, depth - 3)
-            should_stop = check(pos, self.tp_move, best, (0, 0, ord(" ")), -score_1)
+            should_stop = check(pos, self.tp_move, best, (0, 0, 0), -score_1)
 
         if not should_stop:
             # For QSearch we have a different kind of null-move, namely we can just stop
             # and not capture anything else.
             if depth == 0:
-                should_stop = check(pos, self.tp_move, best, (0, 0, ord(" ")), pos.score)
+                should_stop = check(pos, self.tp_move, best, (0, 0, 0), pos.score)
 
         var val_lower: Int = -self.MATE_UPPER
 
         if not should_stop:
             # Look for the strongest ove from last time, the hash-move.
             var killer_py: PythonObject = self.tp_move.get(get_tp_move_key(pos))
-            var killer: (Int, Int, Int) = (killer_py[0].to_float64().to_int(), killer_py[1].to_float64().to_int(), killer_py[2].to_float64().to_int()) # TODO: Fix it
+            var killer: (Int, Int, Int) = (0, 0, 0)
 
             # If there isn't one, try to find one with a more shallow search.
             # This is known as Internal Iterative Deepening (IID). We set
             # can_null=True, since we want to make sure we actually find a move.
-            if killer.get[2, Int]() == ord(" ") and depth > 2:
+            if not Python.is_type(killer_py, Python.none()) and depth > 2:
+                var killer = (killer_py[0].to_float64().to_int(), killer_py[1].to_float64().to_int(), killer_py[2].to_float64().to_int()) # TODO: Fix it
                 self.bound(pos, gamma, depth - 3, can_null=0)
                 killer = (killer_py[0].to_float64().to_int(), killer_py[1].to_float64().to_int(), killer_py.to_float64().to_int()) # TODO: Fix it
 
@@ -423,7 +448,7 @@ struct Searcher:
             # since otherwise we'd get search instability.
             # We will search it again in the main loop below, but the tp will fix
             # things for us.
-            if killer.get[2, Int]() == ord(" ") and pos.value(killer) >= val_lower:
+            if not Python.is_type(killer_py, Python.none()) and pos.value(killer) >= val_lower:
                 should_stop = check(pos, self.tp_move, best, killer, -self.bound(pos.move(killer), 1 - gamma, depth - 1))
 
         # Then all the other moves
@@ -529,8 +554,9 @@ struct Searcher:
             let new_pos: Position = py_position_to_position(history[py.len(history) - 1])
             let key = get_tp_move_key(new_pos)
             let move_py: PythonObject = self.tp_move.get(key)
-            let move: (Int, Int, Int) = py_move_to_move(move_py)
-            # print(depth, gamma, score, move)
+            var move: (Int, Int, Int) = (0, 0, 0)
+            if not Python.is_type(move_py, Python.none()):
+                move = py_move_to_move(move_py)
             print(depth, gamma, score, move_py)
             moves.push_back((gamma, score, move))
             gamma = (lower + upper + 1) // 2
@@ -569,7 +595,9 @@ def main():
         "         \n"  # 110 -119
     )
     let e = board_str_to_numbers(initial)
-    var hist: PythonObject = py.list([e.get[0, Int](), e.get[1, Int](), e.get[2, Int](), e.get[3, Int](), e.get[4, Int](), e.get[5, Int](), e.get[6, Int](), e.get[7, Int](), e.get[8, Int](), e.get[9, Int](), e.get[10, Int](), e.get[11, Int](), e.get[12, Int](), e.get[13, Int](), e.get[14, Int](), e.get[15, Int](), e.get[16, Int](), e.get[17, Int](), e.get[18, Int](), e.get[19, Int](), e.get[20, Int](), e.get[21, Int](), e.get[22, Int](), e.get[23, Int](), e.get[24, Int](), e.get[25, Int](), e.get[26, Int](), e.get[27, Int](), e.get[28, Int](), e.get[29, Int](), 0, True, True, True, True, 0, 0])
+    let init_pos: PythonObject = py.tuple([e.get[0, Int](), e.get[1, Int](), e.get[2, Int](), e.get[3, Int](), e.get[4, Int](), e.get[5, Int](), e.get[6, Int](), e.get[7, Int](), e.get[8, Int](), e.get[9, Int](), e.get[10, Int](), e.get[11, Int](), e.get[12, Int](), e.get[13, Int](), e.get[14, Int](), e.get[15, Int](), e.get[16, Int](), e.get[17, Int](), e.get[18, Int](), e.get[19, Int](), e.get[20, Int](), e.get[21, Int](), e.get[22, Int](), e.get[23, Int](), e.get[24, Int](), e.get[25, Int](), e.get[26, Int](), e.get[27, Int](), e.get[28, Int](), e.get[29, Int](), 0, True, True, True, True, 0, 0])
+    var hist: PythonObject = py.list()
+    hist.append(init_pos)
     while True:
         try:
             var args = PythonObject()
@@ -582,9 +610,12 @@ def main():
             elif args[0] == "quit":
                 break
             elif args[0] == "position" and args[1] == "startpos":
-                hist = py.list([e.get[0, Int](), e.get[1, Int](), e.get[2, Int](), e.get[3, Int](), e.get[4, Int](), e.get[5, Int](), e.get[6, Int](), e.get[7, Int](), e.get[8, Int](), e.get[9, Int](), e.get[10, Int](), e.get[11, Int](), e.get[12, Int](), e.get[13, Int](), e.get[14, Int](), e.get[15, Int](), e.get[16, Int](), e.get[17, Int](), e.get[18, Int](), e.get[19, Int](), e.get[20, Int](), e.get[21, Int](), e.get[22, Int](), e.get[23, Int](), e.get[24, Int](), e.get[25, Int](), e.get[26, Int](), e.get[27, Int](), e.get[28, Int](), e.get[29, Int](), 0, True, True, True, True, 0, 0])
+                hist = py.list()
+                hist.append(init_pos)
+                print("Done setting up position")
                 # TODO: Parse moves
             elif args[0] == "go":
+                print("Starting search")
                 # var wtime: Int = 2000,btime, winc, binc = [int(a) / 1000 for a in args[2::2]]
                 let wtime: Int = 2000
                 let btime: Int = 2000
@@ -595,6 +626,7 @@ def main():
                 # start = time.time()
                 var move_str: String = ""
                 for depth in range(1, 4):
+                    print("Depth", depth)
                     var searcher: Searcher = Searcher()
                     # TODO: Stop when in the middle of the depth
                     let moves: DynamicVector[(Int, Int, (Int, Int, Int))] = searcher.search(hist, depth)
@@ -610,8 +642,9 @@ def main():
                             var j = move.get[1, Int]()
                             if py.len(hist) % 2 == 0:
                                 i, j = 119 - i, 119 - j
+                            print("Debug", move.get[2, Int]())
                             move_str = render(i) + render(j) + lower(chr(move.get[2, Int]()))
                             print("info depth", depth, "score cp", score, "pv", move_str)
                 print("bestmove", move_str or '(none)')
-        except:
-            print("Could not read input")
+        except e:
+            print(e)

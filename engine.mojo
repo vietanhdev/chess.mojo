@@ -5,11 +5,11 @@ from python import Python
 def isupper(c: String):
     return ord("A") <= ord(c) <= ord("Z")
 
-def isspace(c: String):
-    return c == " "
-
 def islower(c: String):
     return ord("a") <= ord(c) <= ord("z")
+
+def isspace(c: String):
+    return c == " " or c == "\n"
 
 def upper(c: String) -> String:
     if islower(c):
@@ -119,12 +119,12 @@ struct Position:
         let S: Int = 10
         let W: Int = -1
         let p_directions = Python.dict()
-        p_directions[ord("P")] = (N, N+N, N+W, N+E)
-        p_directions[ord("N")] = (N+N+E, E+N+E, E+S+E, S+S+E, S+S+W, W+S+W, W+N+W, N+N+W)
-        p_directions[ord("B")] = (N+E, S+E, S+W, N+W)
-        p_directions[ord("R")] = (N, E, S, W)
-        p_directions[ord("Q")] = (N, E, S, W, N+E, S+E, S+W, N+W)
-        p_directions[ord("K")] = (N, E, S, W, N+E, S+E, S+W, N+W)
+        p_directions["P"] = (N, N+N, N+W, N+E)
+        p_directions["N"] = (N+N+E, E+N+E, E+S+E, S+S+E, S+S+W, W+S+W, W+N+W, N+N+W)
+        p_directions["B"] = (N+E, S+E, S+W, N+W)
+        p_directions["R"] = (N, E, S, W)
+        p_directions["Q"] = (N, E, S, W, N+E, S+E, S+W, N+W)
+        p_directions["K"] = (N, E, S, W, N+E, S+E, S+W, N+W)
         generated_moves = DynamicVector[(Int, Int, Int)]()
         # For each of our pieces, iterate through each possible 'ray' of moves,
         # as defined in the 'directions' map. The rays are broken e.g. by
@@ -133,7 +133,7 @@ struct Position:
             let p: String = self.board[i]
             if not isupper(p):
                 continue
-            for d_py in p_directions[ord(p)]:
+            for d_py in p_directions[p]:
                 let d = d_py.to_float64().to_int() # TODO: Fix it
                 var j: Int = i
                 while True:

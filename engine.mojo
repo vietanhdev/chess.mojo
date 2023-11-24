@@ -22,7 +22,7 @@ def lower(c: String) -> String:
     return c
 
 def swapboard(board: String) -> String:
-    """Reverse and swap the case of a board"""
+    """Reverse and swap the case of a board."""
     if board == "": return ""
     var ret: String = ""
     for i in range(len(board) - 1, -1, -1):
@@ -49,18 +49,19 @@ def min(x: Int, y: Int) -> Int:
     return y
 
 struct Position:
-    """A state of a game
+    """
+    A state of a game.
     board -- a 120 char representation of the board
     score -- the board evaluation
     wc -- the castling rights, [west/queen side, east/king side]
     bc -- the opponent castling rights, [west/king side, east/queen side]
     ep - the en passant square
-    kp - the king passant square
+    kp - the king passant square.
     """
     var board: String
     var score: Int
-    var wc: (Bool, Bool)
-    var bc: (Bool, Bool)
+    var wc: (Int, Int)
+    var bc: (Int, Int)
     var ep: Int
     var kp: Int
 
@@ -74,7 +75,7 @@ struct Position:
     var A8: Int
     var H8: Int
 
-    fn __init__(inout self, board: String, score: Int, wc: (Bool, Bool), bc: (Bool, Bool), ep: Int, kp: Int):
+    fn __init__(inout self, board: String, score: Int, wc: (Int, Int), bc: (Int, Int), ep: Int, kp: Int):
         self.board = board
         self.score = score
         self.wc = wc
@@ -110,30 +111,30 @@ struct Position:
         # fast detection of moves that don't stay within the board.
         self.A1, self.H1, self.A8, self.H8 = 91, 98, 21, 28
 
-    def gen_moves(inout self) -> DynamicVector[(Int, Int, StringLiteral)]:
+    def gen_moves(inout self) -> DynamicVector[(Int, Int, Int)]:
         # Lists of possible moves for each piece type.
         # N, E, S, W = -10, 1, 10, -1
-        var N: Int = -10
-        var E: Int = 1
-        var S: Int = 10
-        var W: Int = -1
-        var p_directions = Python.dict()
+        let N: Int = -10
+        let E: Int = 1
+        let S: Int = 10
+        let W: Int = -1
+        let p_directions = Python.dict()
         p_directions[ord("P")] = (N, N+N, N+W, N+E)
         p_directions[ord("N")] = (N+N+E, E+N+E, E+S+E, S+S+E, S+S+W, W+S+W, W+N+W, N+N+W)
         p_directions[ord("B")] = (N+E, S+E, S+W, N+W)
         p_directions[ord("R")] = (N, E, S, W)
         p_directions[ord("Q")] = (N, E, S, W, N+E, S+E, S+W, N+W)
         p_directions[ord("K")] = (N, E, S, W, N+E, S+E, S+W, N+W)
-        generated_moves = DynamicVector[(Int, Int, StringLiteral)]()
+        generated_moves = DynamicVector[(Int, Int, Int)]()
         # For each of our pieces, iterate through each possible 'ray' of moves,
         # as defined in the 'directions' map. The rays are broken e.g. by
         # captures or immediately in case of pieces such as knights.
         for i in range(len(self.board)):
-            var p: String = self.board[i]
+            let p: String = self.board[i]
             if not isupper(p):
                 continue
             for d_py in p_directions[ord(p)]:
-                var d = d_py.to_float64().to_int() # TODO: Fix it
+                let d = d_py.to_float64().to_int() # TODO: Fix it
                 var j: Int = i
                 while True:
                     j = j + d
@@ -153,43 +154,43 @@ struct Position:
                             break
                         # If we move to the last row, we can be anything
                         if self.A8 <= j <= self.H8:
-                            generated_moves.push_back((i, j, "N"))
-                            generated_moves.push_back((i, j, "B"))
-                            generated_moves.push_back((i, j, "R"))
-                            generated_moves.push_back((i, j, "Q"))
+                            generated_moves.push_back((i, j, ord("N")))
+                            generated_moves.push_back((i, j, ord("B")))
+                            generated_moves.push_back((i, j, ord("R")))
+                            generated_moves.push_back((i, j, ord("Q")))
                             break
                     # Move it
-                    generated_moves.push_back((i, j, ""))
+                    generated_moves.push_back((i, j, ord(" ")))
                     # Stop crawlers from sliding, and sliding after captures
                     if (p == "P" or p == "N" or p == "K") or islower(q):
                         break
                     # Castling, by sliding the rook next to the king
-                    if i == self.A1 and self.board[j + E] == "K" and self.wc.get[0, Bool]():
-                        generated_moves.push_back((j + E, j + W, ""))
-                    if i == self.H1 and self.board[j + W] == "K" and self.wc.get[1, Bool]():
-                        generated_moves.push_back((j + W, j + E, ""))
+                    if i == self.A1 and self.board[j + E] == "K" and self.wc.get[0, Int]():
+                        generated_moves.push_back((j + E, j + W, ord(" ")))
+                    if i == self.H1 and self.board[j + W] == "K" and self.wc.get[1, Int]():
+                        generated_moves.push_back((j + W, j + E, ord(" ")))
         return generated_moves
 
     def rotate(self, nullmove=False) -> Position:
-        """Rotates the board, preserving enpassant, unless nullmove"""
+        """Rotates the board, preserving enpassant, unless nullmove."""
         return Position(
             swapboard(self.board), -self.score, self.bc, self.wc,
             119 - self.ep if self.ep and not nullmove else 0,
             119 - self.kp if self.kp and not nullmove else 0,
         )
 
-    def move(inout self, move: (Int, Int, StringLiteral)) -> Position:
+    def move(inout self, move: (Int, Int, Int)) -> Position:
         var i: Int = move.get[0, Int]()
         var j: Int = move.get[1, Int]()
-        var prom: String = move.get[2, StringLiteral]()
+        var prom: String = chr(move.get[2, Int]())
         var p: String = self.board[i]
         var q: String = self.board[j]
         def put(board: String, i: Int, p: String) -> String:
             return board[:i] + p + board[i + 1 :]
         # Copy variables and reset ep and kp
         var board = self.board
-        var wc: (Bool, Bool) = self.wc
-        var bc: (Bool, Bool) = self.bc
+        var wc: (Int, Int) = self.wc
+        var bc: (Int, Int) = self.bc
         var ep: Int = 0
         var kp: Int = 0
         var score: Int = self.score + self.value(move)
@@ -197,13 +198,13 @@ struct Position:
         board = put(board, j, board[i])
         board = put(board, i, ".")
         # Castling rights, we move the rook or capture the opponent's
-        if i == self.A1: wc = (False, wc.get[1, Bool]())
-        if i == self.H1: wc = (wc.get[0, Bool](), False)
-        if j == self.A8: bc = (bc.get[0, Bool](), False)
-        if j == self.H8: bc = (False, bc.get[1, Bool]())
+        if i == self.A1: wc = (0, wc.get[1, Int]())
+        if i == self.H1: wc = (wc.get[0, Int](), 0)
+        if j == self.A8: bc = (bc.get[0, Int](), 0)
+        if j == self.H8: bc = (0, bc.get[1, Int]())
         # Castling
         if p == "K":
-            wc = (False, False)
+            wc = (0, 0)
             if abs(j - i) == 2:
                 kp = (i + j) // 2
                 board = put(board, self.A1 if j < i else self.H1, ".")
@@ -219,8 +220,8 @@ struct Position:
         # We rotate the returned position, so it's ready for the next player
         return Position(board, score, wc, bc, ep, kp).rotate()
 
-    def value(inout self, move: (Int, Int, StringLiteral)) -> Int:
-        var pst = Python.dict()
+    def value(inout self, move: (Int, Int, Int)) -> Int:
+        let pst = Python.dict()
         pst["P"] = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 100, 100, 100, 100, 100, 100, 100, 0, 0, 178, 183, 186, 173, 202, 182, 185, 190, 0, 0, 107, 129, 121, 144, 140, 131, 144, 107, 0, 0, 83, 116, 98, 115, 114, 100, 115, 87, 0, 0, 74, 103, 110, 109, 106, 101, 100, 77, 0, 0, 78, 109, 105, 89, 90, 98, 103, 81, 0, 0, 69, 108, 93, 63, 64, 86, 103, 69, 0, 0, 100, 100, 100, 100, 100, 100, 100, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         pst["N"] = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 214, 227, 205, 205, 270, 225, 222, 210, 0, 0, 277, 274, 380, 244, 284, 342, 276, 266, 0, 0, 290, 347, 281, 354, 353, 307, 342, 278, 0, 0, 304, 304, 325, 317, 313, 321, 305, 297, 0, 0, 279, 285, 311, 301, 302, 315, 282, 280, 0, 0, 262, 290, 293, 302, 298, 295, 291, 266, 0, 0, 257, 265, 282, 280, 282, 280, 257, 260, 0, 0, 206, 257, 254, 256, 261, 245, 258, 211, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         pst["B"] = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 261, 242, 238, 244, 297, 213, 283, 270, 0, 0, 309, 340, 355, 278, 281, 351, 322, 298, 0, 0, 311, 359, 288, 361, 372, 310, 348, 306, 0, 0, 345, 337, 340, 354, 346, 345, 335, 330, 0, 0, 333, 330, 337, 343, 337, 336, 320, 327, 0, 0, 334, 345, 344, 335, 328, 345, 340, 335, 0, 0, 339, 340, 331, 326, 327, 326, 340, 336, 0, 0, 313, 322, 305, 308, 306, 305, 310, 310, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
@@ -228,12 +229,12 @@ struct Position:
         pst["Q"] = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 935, 930, 921, 825, 998, 953, 1017, 955, 0, 0, 943, 961, 989, 919, 949, 1005, 986, 953, 0, 0, 927, 972, 961, 989, 1001, 992, 972, 931, 0, 0, 930, 913, 951, 946, 954, 949, 916, 923, 0, 0, 915, 914, 927, 924, 928, 919, 909, 907, 0, 0, 899, 923, 916, 918, 913, 918, 913, 902, 0, 0, 893, 911, 929, 910, 914, 914, 908, 891, 0, 0, 890, 899, 898, 916, 898, 893, 895, 887, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         pst["K"] = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 60004, 60054, 60047, 59901, 59901, 60060, 60083, 59938, 0, 0, 59968, 60010, 60055, 60056, 60056, 60055, 60010, 60003, 0, 0, 59938, 60012, 59943, 60044, 59933, 60028, 60037, 59969, 0, 0, 59945, 60050, 60011, 59996, 59981, 60013, 60000, 59951, 0, 0, 59945, 59957, 59948, 59972, 59949, 59953, 59992, 59950, 0, 0, 59953, 59958, 59957, 59921, 59936, 59968, 59971, 59968, 0, 0, 59996, 60003, 59986, 59950, 59943, 59982, 60013, 60004, 0, 0, 60017, 60030, 59997, 59986, 60006, 59999, 60040, 60018, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
-        var i: Int = move.get[0, Int]()
-        var j: Int = move.get[1, Int]()
-        var prom: String = move.get[2, StringLiteral]()
+        let i: Int = move.get[0, Int]()
+        let j: Int = move.get[1, Int]()
+        let prom: String = chr(move.get[2, Int]())
 
-        var p: String = self.board[i]
-        var q: String = self.board[j]
+        let p: String = self.board[i]
+        let q: String = self.board[j]
 
         # Actual move
         var score: Int = (pst[p][j] - pst[p][i]).to_float64().to_int() # TODO: Fix it
@@ -255,33 +256,53 @@ struct Position:
                 score += pst["P"][119 - (j + self.direction_S)].to_float64().to_int() # TODO: Fix it
         return score
 
+def board_str_to_numbers(board: String) -> (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int):
+    """Encode 120 char board to 30 Ints with 32 bits each."""
+    # TODO: Encode the chessboard more efficiently
+    var ret: DynamicVector[Int] = DynamicVector[Int]()
+    for i in range(len(board)//4):
+        let c1: String = board[i*2]
+        let c2: String = board[i*2 + 1]
+        let c3: String = board[i*2 + 2]
+        let c4: String = board[i*2 + 3]
+        let n: Int = ord(c1) + ord(c2) * 256 + ord(c3) * 65536 + ord(c4) * 16777216
+        ret.push_back(n)
+    return (ret[0], ret[1], ret[2], ret[3], ret[4], ret[5], ret[6], ret[7], ret[8], ret[9], ret[10], ret[11], ret[12], ret[13], ret[14], ret[15], ret[16], ret[17], ret[18], ret[19], ret[20], ret[21], ret[22], ret[23], ret[24], ret[25], ret[26], ret[27], ret[28], ret[29])
 
-def get_tp_score_key(pos: Position, depth: Int, can_null: Bool) -> (String, Int, Bool, Bool, Bool, Bool, Int, Int, Int, Bool):
-    return pos.board, pos.score, pos.wc.get[0, Bool](), pos.wc.get[1, Bool](), pos.bc.get[0, Bool](), pos.bc.get[1, Bool](), pos.ep, pos.kp, depth, can_null
+def get_tp_score_key(pos: Position, depth: Int, can_null: Int) -> (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int):
+    let e = board_str_to_numbers(pos.board)
+    return (
+        e.get[0, Int](), e.get[1, Int](), e.get[2, Int](), e.get[3, Int](), e.get[4, Int](), e.get[5, Int](), e.get[6, Int](), e.get[7, Int](), e.get[8, Int](), e.get[9, Int](), e.get[10, Int](), e.get[11, Int](), e.get[12, Int](), e.get[13, Int](), e.get[14, Int](), e.get[15, Int](), e.get[16, Int](), e.get[17, Int](), e.get[18, Int](), e.get[19, Int](), e.get[20, Int](), e.get[21, Int](), e.get[22, Int](), e.get[23, Int](), e.get[24, Int](), e.get[25, Int](), e.get[26, Int](), e.get[27, Int](), e.get[28, Int](), e.get[29, Int](), pos.score, pos.wc.get[0, Int](), pos.wc.get[1, Int](), pos.bc.get[0, Int](), pos.bc.get[1, Int](), pos.ep, pos.kp, depth, can_null
+    )
 
-def get_tp_move_key(pos: Position) -> (String, Int, Bool, Bool, Bool, Bool, Int, Int):
-    return pos.board, pos.score, pos.wc.get[0, Bool](), pos.wc.get[1, Bool](), pos.bc.get[0, Bool](), pos.bc.get[1, Bool](), pos.ep, pos.kp
+def get_tp_move_key(pos: Position) -> (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int):
+    let e = board_str_to_numbers(pos.board)
+    return (
+        e.get[0, Int](), e.get[1, Int](), e.get[2, Int](), e.get[3, Int](), e.get[4, Int](), e.get[5, Int](), e.get[6, Int](), e.get[7, Int](), e.get[8, Int](), e.get[9, Int](), e.get[10, Int](), e.get[11, Int](), e.get[12, Int](), e.get[13, Int](), e.get[14, Int](), e.get[15, Int](), e.get[16, Int](), e.get[17, Int](), e.get[18, Int](), e.get[19, Int](), e.get[20, Int](), e.get[21, Int](), e.get[22, Int](), e.get[23, Int](), e.get[24, Int](), e.get[25, Int](), e.get[26, Int](), e.get[27, Int](), e.get[28, Int](), e.get[29, Int](), pos.score, pos.wc.get[0, Int](), pos.wc.get[1, Int](), pos.bc.get[0, Int](), pos.bc.get[1, Int](), pos.ep, pos.kp
+    )
 
-def get_history_key(pos: Position) -> (String, Int, Bool, Bool, Bool, Bool, Int, Int):
-    return pos.board, pos.score, pos.wc.get[0, Bool](), pos.wc.get[1, Bool](), pos.bc.get[0, Bool](), pos.bc.get[1, Bool](), pos.ep, pos.kp
+def get_history_key(pos: Position) -> (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int):
+    let e = board_str_to_numbers(pos.board)
+    return (
+        e.get[0, Int](), e.get[1, Int](), e.get[2, Int](), e.get[3, Int](), e.get[4, Int](), e.get[5, Int](), e.get[6, Int](), e.get[7, Int](), e.get[8, Int](), e.get[9, Int](), e.get[10, Int](), e.get[11, Int](), e.get[12, Int](), e.get[13, Int](), e.get[14, Int](), e.get[15, Int](), e.get[16, Int](), e.get[17, Int](), e.get[18, Int](), e.get[19, Int](), e.get[20, Int](), e.get[21, Int](), e.get[22, Int](), e.get[23, Int](), e.get[24, Int](), e.get[25, Int](), e.get[26, Int](), e.get[27, Int](), e.get[28, Int](), e.get[29, Int](), pos.score, pos.wc.get[0, Int](), pos.wc.get[1, Int](), pos.bc.get[0, Int](), pos.bc.get[1, Int](), pos.ep, pos.kp
+    )
 
-def py_history_to_history(pos: PythonObject) -> Position:
+def py_position_to_position(pos: PythonObject) -> Position:
     return Position(
         pos[0].to_float64().to_int(), # TODO: Fix it
         pos[1].to_float64().to_int(), # TODO: Fix it
-        (rebind[Bool, Int](pos[2].to_float64().to_int()), rebind[Bool, Int](pos[3].to_float64().to_int())), # TODO: Fix it
-        (rebind[Bool, Int](pos[4].to_float64().to_int()), rebind[Bool, Int](pos[5].to_float64().to_int())), # TODO: Fix it
+        (pos[2].to_float64().to_int(), pos[3].to_float64().to_int()),
+        (pos[4].to_float64().to_int(), pos[5].to_float64().to_int()),
         pos[6].to_float64().to_int(), # TODO: Fix it
         pos[7].to_float64().to_int(), # TODO: Fix it
     )
 
-def py_move_to_move(move: PythonObject) -> (Int, Int, StringLiteral):
-    var prom:   StringLiteral  = rebind[StringLiteral, Int](move[2].to_float64().to_int())
-    return move[0].to_float64().to_int(), move[1].to_float64().to_int(), prom
+def py_move_to_move(move: PythonObject) -> (Int, Int, Int):
+    return move[0].to_float64().to_int(), move[1].to_float64().to_int(), move[2].to_float64().to_int() # TODO: Fix it
 
 # lower <= s(pos) <= upper
 struct Searcher:
-    """A class that can search a position to a given depth"""
+    """A class that can search a position to a given depth."""
     var tp_score: PythonObject
     var tp_move: PythonObject
     var history: PythonObject
@@ -290,7 +311,7 @@ struct Searcher:
     var MATE_UPPER: Int
 
     def __init__(inout self):
-        var py = Python.import_module("builtins")
+        let py = Python.import_module("builtins")
         self.tp_score = py.dict()
         self.tp_move = py.dict()
         self.history = py.set()
@@ -307,11 +328,11 @@ struct Searcher:
         self.MATE_LOWER = 60000 - 10 * 929
         self.MATE_UPPER = 60000 + 10 * 929
 
-    def bound(inout self, pos: Position, gamma: Int, depth: Int, can_null: Bool=True) -> Int:
+    def bound(inout self, pos: Position, gamma: Int, depth: Int, can_null: Int=1) -> Int:
         """ Let s* be the "true" score of the sub-tree we are searching.
             The method returns r, where
             if gamma >  s* then s* <= r < gamma  (A better upper bound)
-            if gamma <= s* then gamma <= r <= s* (A better lower bound) """
+            if gamma <= s* then gamma <= r <= s* (A better lower bound)."""
         self.nodes += 1
 
         # Depth <= 0 is QSearch. Here any position is searched as deeply as is needed for
@@ -344,16 +365,16 @@ struct Searcher:
         # This allows us to define the moves, but only calculate them if needed.
         # Run through the moves, shortcutting when possible
         var best: Int = -self.MATE_UPPER
-        def check(inout pos: Position, tp_move: PythonObject, inout best: Int, move: (Int, Int, StringLiteral), score: Int) -> Bool:
+        def check(inout pos: Position, tp_move: PythonObject, inout best: Int, move: (Int, Int, Int), score: Int) -> Bool:
             best = max(best, score)
             if best >= gamma:
                 # Save the move for pv construction and killer heuristic
-                if move.get[2, StringLiteral]():
-                    var key: Tuple[String, Int, Bool, Bool, Bool, Bool, Int, Int] = get_tp_move_key(pos)
+                if move.get[2, Int]() != ord(" "):
+                    let key = get_tp_move_key(pos)
                     tp_move.__setitem__(key, (
                         move.get[0, Int](),
                         move.get[1, Int](),
-                        move.get[2, StringLiteral](),
+                        move.get[2, Int](),
                     ))
                 return True
             return False
@@ -370,30 +391,27 @@ struct Searcher:
         var should_stop: Bool = False
         if depth > 2 and can_null and abs(pos.score) < 500:
             var score_1: Int = self.bound(pos.rotate(nullmove=True), 1 - gamma, depth - 3)
-            should_stop = check(pos, self.tp_move, best, (0, 0, ""), -score_1)
+            should_stop = check(pos, self.tp_move, best, (0, 0, ord(" ")), -score_1)
 
         if not should_stop:
             # For QSearch we have a different kind of null-move, namely we can just stop
             # and not capture anything else.
             if depth == 0:
-                should_stop = check(pos, self.tp_move, best, (0, 0, ""), pos.score)
+                should_stop = check(pos, self.tp_move, best, (0, 0, ord(" ")), pos.score)
 
         var val_lower: Int = -self.MATE_UPPER
 
         if not should_stop:
             # Look for the strongest ove from last time, the hash-move.
             var killer_py: PythonObject = self.tp_move.get(get_tp_move_key(pos))
-            var killer_prom: StringLiteral = rebind[StringLiteral, Int](killer_py[2].to_float64().to_int())
-            var killer: (Int, Int, StringLiteral) = (killer_py[0].to_float64().to_int(), killer_py[1].to_float64().to_int(), killer_prom) # TODO: Fix it
+            var killer: (Int, Int, Int) = (killer_py[0].to_float64().to_int(), killer_py[1].to_float64().to_int(), killer_py[2].to_float64().to_int()) # TODO: Fix it
 
             # If there isn't one, try to find one with a more shallow search.
             # This is known as Internal Iterative Deepening (IID). We set
             # can_null=True, since we want to make sure we actually find a move.
-            if len(killer.get[2, StringLiteral]()) == 0 and depth > 2:
-                self.bound(pos, gamma, depth - 3, can_null=False)
-                killer_py = self.tp_move.get(get_tp_move_key(pos))
-                killer_prom = rebind[StringLiteral, Int](killer_py[2].to_float64().to_int())
-                killer = (killer_py[0].to_float64().to_int(), killer_py[1].to_float64().to_int(), killer_prom) # TODO: Fix it
+            if killer.get[2, Int]() == ord(" ") and depth > 2:
+                self.bound(pos, gamma, depth - 3, can_null=0)
+                killer = (killer_py[0].to_float64().to_int(), killer_py[1].to_float64().to_int(), killer_py.to_float64().to_int()) # TODO: Fix it
 
             # If depth == 0 we only try moves with high intrinsic score (captures and
             # promotions). Otherwise we do all moves. This is called quiescent search.
@@ -405,15 +423,15 @@ struct Searcher:
             # since otherwise we'd get search instability.
             # We will search it again in the main loop below, but the tp will fix
             # things for us.
-            if len(killer.get[2, StringLiteral]()) == 0 and pos.value(killer) >= val_lower:
+            if killer.get[2, Int]() == ord(" ") and pos.value(killer) >= val_lower:
                 should_stop = check(pos, self.tp_move, best, killer, -self.bound(pos.move(killer), 1 - gamma, depth - 1))
 
         # Then all the other moves
         if not should_stop:
-            var pos_moves: DynamicVector[(Int, Int, StringLiteral)] = pos.gen_moves()
+            var pos_moves: DynamicVector[(Int, Int, Int)] = pos.gen_moves()
             var values: DynamicVector[Int] = DynamicVector[Int]()
             for i in range(len(pos_moves)):
-                var move: (Int, Int, StringLiteral) = pos_moves[i]
+                var move: (Int, Int, Int) = pos_moves[i]
                 values.push_back(pos.value(move))
 
             # Sort the moves by their static score reversed, so the best moves are first
@@ -424,7 +442,7 @@ struct Searcher:
                         pos_moves[i], pos_moves[j] = pos_moves[j], pos_moves[i]
 
             for i in range(len(pos_moves)):
-                var move: (Int, Int, StringLiteral) = pos_moves[i]
+                var move: (Int, Int, Int) = pos_moves[i]
                 var val: Int = values[i]
                 # Quiescent search
                 if val < val_lower:
@@ -471,17 +489,17 @@ struct Searcher:
 
         # Table part 2
         if best >= gamma:
-            var key: (String, Int, Bool, Bool, Bool, Bool, Int, Int, Int, Bool) = get_tp_score_key(pos, depth, can_null)
+            var key = get_tp_score_key(pos, depth, can_null)
             self.tp_score.__setitem__(key, (best, entry.get[1, Int]()))
         if best < gamma:
-            var key: (String, Int, Bool, Bool, Bool, Bool, Int, Int, Int, Bool) = get_tp_score_key(pos, depth, can_null)
+            var key = get_tp_score_key(pos, depth, can_null)
             self.tp_score.__setitem__(key, (entry.get[0, Int](), best))
 
         return best
 
-    def search(inout self, history: PythonObject, depth: Int) -> DynamicVector[(Int, Int, (Int, Int, StringLiteral))]:
-        """Iterative deepening MTD-bi search"""
-        var py = Python.import_module("builtins")
+    def search(inout self, history: PythonObject, depth: Int) -> DynamicVector[(Int, Int, (Int, Int, Int))]:
+        """Iterative deepening MTD-bi search."""
+        let py = Python.import_module("builtins")
         self.nodes = 0
         self.history = py.set(history)
         self.tp_score.clear()
@@ -491,7 +509,7 @@ struct Searcher:
         # limit exception. Hence we bound the ply. We also can't start at 0, since
         # that's quiscent search, and we don't always play legal moves there.
 
-        var moves = DynamicVector[(Int, Int, (Int, Int, StringLiteral))]()
+        var moves = DynamicVector[(Int, Int, (Int, Int, Int))]()
         # The inner loop is a binary search on the score of the position.
         # Inv: lower <= score <= upper
         # 'while lower != upper' would work, but it's too much effort to spend
@@ -499,19 +517,19 @@ struct Searcher:
         # lower, upper = -self.MATE_LOWER, self.MATE_LOWER
         var lower: Int = -self.MATE_LOWER
         var upper: Int = self.MATE_LOWER
-        var EVAL_ROUGHNESS: Int = 15
+        let EVAL_ROUGHNESS: Int = 15
         var i: Int = 0
         while lower < upper - EVAL_ROUGHNESS:
             i += 1
-            score = self.bound(py_history_to_history(history[py.len(history) - 1]), gamma, depth, can_null=False)
+            score = self.bound(py_position_to_position(history[py.len(history) - 1]), gamma, depth, can_null=0)
             if score >= gamma:
                 lower = score
             if score < gamma:
                 upper = score
-            var new_pos: Position = py_history_to_history(history[py.len(history) - 1])
-            var key: Tuple[String, Int, Bool, Bool, Bool, Bool, Int, Int] = get_tp_move_key(new_pos)
-            var move_py: PythonObject = self.tp_move.get(key)
-            var move: (Int, Int, StringLiteral) = py_move_to_move(move_py)
+            let new_pos: Position = py_position_to_position(history[py.len(history) - 1])
+            let key = get_tp_move_key(new_pos)
+            let move_py: PythonObject = self.tp_move.get(key)
+            let move: (Int, Int, Int) = py_move_to_move(move_py)
             # print(depth, gamma, score, move)
             print(depth, gamma, score, move_py)
             moves.push_back((gamma, score, move))
@@ -526,7 +544,6 @@ def parse(c: String):
     return A1 + fil - 10 * rank
 def render(i: Int) -> String:
     let A1 = 91
-    # rank, fil = divmod(i - A1, 10)
     let rank = (i - A1) // 10
     let fil = (i - A1) % 10
     var ret = chr(fil + ord("a"))
@@ -551,7 +568,8 @@ def main():
         "         \n"  # 100 -109
         "         \n"  # 110 -119
     )
-    var hist: PythonObject = py.list([Position(initial, 0, (True, True), (True, True), 0, 0)])
+    let e = board_str_to_numbers(initial)
+    var hist: PythonObject = py.list([e.get[0, Int](), e.get[1, Int](), e.get[2, Int](), e.get[3, Int](), e.get[4, Int](), e.get[5, Int](), e.get[6, Int](), e.get[7, Int](), e.get[8, Int](), e.get[9, Int](), e.get[10, Int](), e.get[11, Int](), e.get[12, Int](), e.get[13, Int](), e.get[14, Int](), e.get[15, Int](), e.get[16, Int](), e.get[17, Int](), e.get[18, Int](), e.get[19, Int](), e.get[20, Int](), e.get[21, Int](), e.get[22, Int](), e.get[23, Int](), e.get[24, Int](), e.get[25, Int](), e.get[26, Int](), e.get[27, Int](), e.get[28, Int](), e.get[29, Int](), 0, True, True, True, True, 0, 0])
     while True:
         try:
             var args = PythonObject()
@@ -564,34 +582,26 @@ def main():
             elif args[0] == "quit":
                 break
             elif args[0] == "position" and args[1] == "startpos":
-                hist = py.list([Position(initial, 0, (True, True), (True, True), 0, 0)])
-                # for i in range(3, py.len(args), 2):
-                #     ply = args[i]
-                #     move = args[i + 1]
-                #     i, j, prom = parse(move[:2]), parse(move[2:4]), move[4:].upper()
-                #     if ply % 2 == 1:
-                #         i, j = 119 - i, 119 - j
-                #     hist.append(hist[-1].move((i, j, prom)))
+                hist = py.list([e.get[0, Int](), e.get[1, Int](), e.get[2, Int](), e.get[3, Int](), e.get[4, Int](), e.get[5, Int](), e.get[6, Int](), e.get[7, Int](), e.get[8, Int](), e.get[9, Int](), e.get[10, Int](), e.get[11, Int](), e.get[12, Int](), e.get[13, Int](), e.get[14, Int](), e.get[15, Int](), e.get[16, Int](), e.get[17, Int](), e.get[18, Int](), e.get[19, Int](), e.get[20, Int](), e.get[21, Int](), e.get[22, Int](), e.get[23, Int](), e.get[24, Int](), e.get[25, Int](), e.get[26, Int](), e.get[27, Int](), e.get[28, Int](), e.get[29, Int](), 0, True, True, True, True, 0, 0])
+                # TODO: Parse moves
             elif args[0] == "go":
                 # var wtime: Int = 2000,btime, winc, binc = [int(a) / 1000 for a in args[2::2]]
-                var wtime: Int = 2000
-                var btime: Int = 2000
-                var winc: Int = 2000
-                var binc: Int = 2000
-                if py.len(hist) % 2 == 0:
-                    wtime, winc = btime, binc
-                # var think: Int = py.min(wtime / 40 + winc, wtime / 2 - 1)
+                let wtime: Int = 2000
+                let btime: Int = 2000
+                let winc: Int = 2000
+                let binc: Int = 2000
+                # TODO: Stop when thinking too long
 
                 # start = time.time()
                 var move_str: String = ""
                 for depth in range(1, 4):
                     var searcher: Searcher = Searcher()
                     # TODO: Stop when in the middle of the depth
-                    var moves: DynamicVector[(Int, Int, (Int, Int, StringLiteral))] = searcher.search(hist, depth)
+                    let moves: DynamicVector[(Int, Int, (Int, Int, Int))] = searcher.search(hist, depth)
                     for i in range(len(moves)):
-                        var gamma: Int = moves[i].get[0, Int]()
-                        var score: Int = moves[i].get[1, Int]()
-                        var move: (Int, Int, StringLiteral) = moves[i].get[2, (Int, Int, StringLiteral)]()
+                        let gamma: Int = moves[i].get[0, Int]()
+                        let score: Int = moves[i].get[1, Int]()
+                        let move: (Int, Int, Int) = moves[i].get[2, (Int, Int, Int)]()
                         # The only way we can be sure to have the real move in tp_move,
                         # is if we have just failed high.
                         print(gamma, score)
@@ -600,7 +610,7 @@ def main():
                             var j = move.get[1, Int]()
                             if py.len(hist) % 2 == 0:
                                 i, j = 119 - i, 119 - j
-                            move_str = render(i) + render(j) + lower(move.get[2, StringLiteral]())
+                            move_str = render(i) + render(j) + lower(chr(move.get[2, Int]()))
                             print("info depth", depth, "score cp", score, "pv", move_str)
                 print("bestmove", move_str or '(none)')
         except:

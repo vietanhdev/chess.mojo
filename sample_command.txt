@@ -1,2 +1,0 @@
-position startpos
-go wtime 2000 btime 2000 winc 2000 binc 2000

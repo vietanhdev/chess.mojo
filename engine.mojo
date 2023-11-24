@@ -639,10 +639,10 @@ def main():
                     if ply % 2 == 1:
                         i = 119 - i
                         j = 119 - j
-                        let last_pos: PythonObject = hist[py.len(hist) - 1]
-                        var new_pos: Position = py_position_to_position(last_pos)
-                        new_pos = new_pos.move((i, j, prom))
-                        hist.append(get_history_key(new_pos))
+                    let last_pos: PythonObject = hist[py.len(hist) - 1]
+                    var new_pos: Position = py_position_to_position(last_pos)
+                    new_pos = new_pos.move((i, j, prom))
+                    hist.append(get_history_key(new_pos))
                     ply += 1
             elif args[0] == "go":
                 # var wtime: Int = 2000,btime, winc, binc = [int(a) / 1000 for a in args[2::2]]
@@ -654,7 +654,7 @@ def main():
 
                 # start = time.time()
                 var move_str: String = ""
-                for depth in range(1, 2):
+                for depth in range(1, 3):
                     var searcher: Searcher = Searcher()
                     # TODO: Stop when in the middle of the depth
                     let moves: DynamicVector[(Int, Int, (Int, Int, Int))] = searcher.search(hist, depth)

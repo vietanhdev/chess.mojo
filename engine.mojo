@@ -169,9 +169,6 @@ struct Position:
                         generated_moves.push_back((j + E, j + W, 0))
                     if i == self.H1 and self.board[j + W] == "K" and self.wc.get[1, Int]():
                         generated_moves.push_back((j + W, j + E, 0))
-        print("Moves", len(generated_moves))
-        for i in range(len(generated_moves)):
-            print_move(generated_moves[i])
         return generated_moves
 
     def rotate(self, nullmove=False) -> Position:
@@ -382,7 +379,7 @@ struct Searcher:
         # Let's not repeat positions. We don't chat
         # - at the root (can_null=False) since it is in history, but not a draw.
         # - at depth=0, since it would be expensive and break "futulity pruning".
-        if can_null and depth > 0 and (not Python.is_type(self.history.get(get_history_key(pos)), Python.none())):
+        if can_null and depth > 0 and self.history.__contains__(get_history_key(pos)):
             return 0
 
         # Generator of moves to search in order.
@@ -393,7 +390,7 @@ struct Searcher:
             best = max(best, score)
             if best >= gamma:
                 # Save the move for pv construction and killer heuristic
-                if move.get[2, Int]() != 0:
+                if move.get[2, Int]() != -1:
                     let key = get_tp_move_key(pos)
                     tp_move.__setitem__(key, (
                         move.get[0, Int](),
@@ -414,29 +411,32 @@ struct Searcher:
         #if depth > 2 and can_null and any(c in pos.board for c in "RBNQ") and abs(pos.score) < 500:
         var should_stop: Bool = False
         if depth > 2 and can_null and abs(pos.score) < 500:
-            var score_1: Int = self.bound(pos.rotate(nullmove=True), 1 - gamma, depth - 3)
-            should_stop = check(pos, self.tp_move, best, (0, 0, 0), -score_1)
+            var score_1: Int = -self.bound(pos.rotate(nullmove=True), 1 - gamma, depth - 3)
+            should_stop = check(pos, self.tp_move, best, (-1, -1, -1), score_1)
 
         if not should_stop:
             # For QSearch we have a different kind of null-move, namely we can just stop
             # and not capture anything else.
             if depth == 0:
-                should_stop = check(pos, self.tp_move, best, (0, 0, 0), pos.score)
+                should_stop = check(pos, self.tp_move, best, (-1, -1, -1), pos.score)
 
-        var val_lower: Int = -self.MATE_UPPER
+        var val_lower: Int = 0
 
         if not should_stop:
             # Look for the strongest ove from last time, the hash-move.
             var killer_py: PythonObject = self.tp_move.get(get_tp_move_key(pos))
-            var killer: (Int, Int, Int) = (0, 0, 0)
+            var killer: (Int, Int, Int) = (-1, -1, -1)
+            if not Python.is_type(killer_py, Python.none()):
+                killer = (killer_py[0].to_float64().to_int(), killer_py[1].to_float64().to_int(), killer_py[2].to_float64().to_int()) # TODO: Fix it
 
             # If there isn't one, try to find one with a more shallow search.
             # This is known as Internal Iterative Deepening (IID). We set
             # can_null=True, since we want to make sure we actually find a move.
-            if not Python.is_type(killer_py, Python.none()) and depth > 2:
-                var killer = (killer_py[0].to_float64().to_int(), killer_py[1].to_float64().to_int(), killer_py[2].to_float64().to_int()) # TODO: Fix it
+            if Python.is_type(killer_py, Python.none()) and depth > 2:
                 self.bound(pos, gamma, depth - 3, can_null=0)
-                killer = (killer_py[0].to_float64().to_int(), killer_py[1].to_float64().to_int(), killer_py.to_float64().to_int()) # TODO: Fix it
+                killer_py = self.tp_move.get(get_tp_move_key(pos))
+                if not Python.is_type(killer_py, Python.none()):
+                    killer = (killer_py[0].to_float64().to_int(), killer_py[1].to_float64().to_int(), killer_py.to_float64().to_int()) # TODO: Fix it
 
             # If depth == 0 we only try moves with high intrinsic score (captures and
             # promotions). Otherwise we do all moves. This is called quiescent search.
@@ -557,8 +557,10 @@ struct Searcher:
             var move: (Int, Int, Int) = (0, 0, 0)
             if not Python.is_type(move_py, Python.none()):
                 move = py_move_to_move(move_py)
-            print(depth, gamma, score, move_py)
-            moves.push_back((gamma, score, move))
+                print(depth, gamma, score, move_py)
+                moves.push_back((gamma, score, move))
+            else:
+                print("Hix")
             gamma = (lower + upper + 1) // 2
         return moves
 
@@ -642,7 +644,6 @@ def main():
                             var j = move.get[1, Int]()
                             if py.len(hist) % 2 == 0:
                                 i, j = 119 - i, 119 - j
-                            print("Debug", move.get[2, Int]())
                             move_str = render(i) + render(j) + lower(chr(move.get[2, Int]()))
                             print("info depth", depth, "score cp", score, "pv", move_str)
                 print("bestmove", move_str or '(none)')

@@ -1,3 +1,5 @@
+#!/usr/bin/env mojo
+
 import time
 from python import Python
 
@@ -20,6 +22,16 @@ def lower(c: String) -> String:
     if isupper(c):
         return chr(ord(c) - ord("A") + ord("a"))
     return c
+
+def switchcase(c: String) -> String:
+    if isupper(c):
+        return lower(c)
+    return upper(c)
+
+def switchcase(c: Int) -> Int:
+    if isupper(chr(c)):
+        return ord(lower(chr(c)))
+    return ord(upper(chr(c)))
 
 def swapboard(board: String) -> String:
     """Reverse and swap the case of a board."""
@@ -179,7 +191,7 @@ struct Position:
             119 - self.kp if self.kp and not nullmove else 0,
         )
 
-    def move(inout self, move: (Int, Int, Int)) -> Position:
+    def move(self, move: (Int, Int, Int)) -> Position:
         var i: Int = move.get[0, Int]()
         var j: Int = move.get[1, Int]()
         var prom: String = chr(move.get[2, Int]())
@@ -557,17 +569,17 @@ struct Searcher:
             var move: (Int, Int, Int) = (0, 0, 0)
             if not Python.is_type(move_py, Python.none()):
                 move = py_move_to_move(move_py)
-                print(depth, gamma, score, move_py)
                 moves.push_back((gamma, score, move))
             gamma = (lower + upper + 1) // 2
         return moves
 
 
-def parse(c: String):
+def parse(c: String) -> Int:
     let A1 = 91
     fil = ord(c[0]) - ord("a")
     rank = ord(c[1]) - ord('0') - 1
     return A1 + fil - 10 * rank
+
 def render(i: Int) -> String:
     let A1 = 91
     let rank = (i - A1) // 10
@@ -612,10 +624,24 @@ def main():
             elif args[0] == "position" and args[1] == "startpos":
                 hist = py.list()
                 hist.append(init_pos)
-                print("Done setting up position")
-                # TODO: Parse moves
+                let argc: Int = py.len(args).to_float64().to_int() # TODO: Fix it
+                var ply: Int = 0
+                for ii in range(3, argc):
+                    move = args[ii]
+                    let move_0: String = parse(chr(py.ord(move[0]).to_float64().to_int()) + chr(py.ord(move[1]).to_float64().to_int()))
+                    let move_1: String = parse(chr(py.ord(move[2]).to_float64().to_int()) + chr(py.ord(move[3]).to_float64().to_int()))
+                    var i: Int = parse(move_0)
+                    var j: Int = parse(move_1)
+                    var prom: Int = 0
+                    if py.len(move) > 4:
+                        prom = ord(upper(chr(py.ord(move[4]).to_float64().to_int())))
+                    if ply % 2 == 1:
+                        i = 119 - i
+                        j = 119 - j
+                        let last_pos: PythonObject = hist[py.len(hist) - 1]
+                        hist.append(get_history_key(py_position_to_position(last_pos).move((i, j, prom))))
+                    ply += 1
             elif args[0] == "go":
-                print("Starting search")
                 # var wtime: Int = 2000,btime, winc, binc = [int(a) / 1000 for a in args[2::2]]
                 let wtime: Int = 2000
                 let btime: Int = 2000
@@ -625,8 +651,7 @@ def main():
 
                 # start = time.time()
                 var move_str: String = ""
-                for depth in range(1, 4):
-                    print("Depth", depth)
+                for depth in range(1, 2):
                     var searcher: Searcher = Searcher()
                     # TODO: Stop when in the middle of the depth
                     let moves: DynamicVector[(Int, Int, (Int, Int, Int))] = searcher.search(hist, depth)
@@ -636,7 +661,6 @@ def main():
                         let move: (Int, Int, Int) = moves[i].get[2, (Int, Int, Int)]()
                         # The only way we can be sure to have the real move in tp_move,
                         # is if we have just failed high.
-                        print(gamma, score)
                         if score >= gamma:
                             var i = move.get[0, Int]()
                             var j = move.get[1, Int]()

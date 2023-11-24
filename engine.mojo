@@ -559,8 +559,6 @@ struct Searcher:
                 move = py_move_to_move(move_py)
                 print(depth, gamma, score, move_py)
                 moves.push_back((gamma, score, move))
-            else:
-                print("Hix")
             gamma = (lower + upper + 1) // 2
         return moves
 

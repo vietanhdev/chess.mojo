@@ -1,6 +1,14 @@
 # Chess.Mojo 🔥
 
-This is an effort to develop a new chess engine with Mojo Language. The current engine is based on [sunfish](https://github.com/thomasahle/sunfish/). It is a work in progress.
+This is an effort to develop a new chess engine with Mojo Language. **WORK IN PROGRESS.**
+
+![Chess.Mojo](./chess.mojo.png)
+
+## Note
+
+- The current engine is not optimized for speed. It is just a proof of concept.
+- The source code was based on [sunfish](https://github.com/thomasahle/sunfish/).
+- TODO: Optimize the engine for speed; Add NNUE support; Lichess support; etc.
 
 ## Usage
 

@@ -1,6 +1,6 @@
 # Chess.Mojo 🔥
 
-This is an effort to develop a new chess engine with Mojo Language. **WORK IN PROGRESS.**
+The first UCI chess engine in the Mojo language. (**WORK IN PROGRESS.**)
 
 ![Chess.Mojo](./chess.mojo.png)
 

@@ -2,57 +2,57 @@
 from python import Python
 
 
-def isupper(c: String):
+fn isupper(c: String) -> Bool:
     return ord("A") <= ord(c) <= ord("Z")
 
-def islower(c: String):
+fn islower(c: String) -> Bool:
     return ord("a") <= ord(c) <= ord("z")
 
-def isspace(c: String):
+fn isspace(c: String) -> Bool:
     return c == " " or c == "\n"
 
-def upper(c: String) -> String:
+fn upper(c: String) -> String:
     if islower(c):
         return chr(ord(c) - ord("a") + ord("A"))
     return c
 
-def lower(c: String) -> String:
+fn lower(c: String) -> String:
     if isupper(c):
         return chr(ord(c) - ord("A") + ord("a"))
     return c
 
-def switchcase(c: String) -> String:
+fn switchcase(c: String) -> String:
     if isupper(c):
         return lower(c)
     return upper(c)
 
-def switchcase(c: Int) -> Int:
+fn switchcase(c: Int) -> Int:
     if isupper(chr(c)):
         return ord(lower(chr(c)))
     return ord(upper(chr(c)))
 
-def swapboard(board: String) -> String:
+fn swapboard(board: String) -> String:
     """Reverse and swap the case of a board."""
     var ret: String = ""
     for i in range(len(board) - 1, -1, -1):
-        c = board[i]
+        let c: String = board[i]
         if isupper(c):
             ret += lower(c)
         else:
             ret += upper(c)
     return ret
 
-def abs(x: Int) -> Int:
+fn abs(x: Int) -> Int:
     if x < 0:
         return -x
     return x
 
-def max(x: Int, y: Int) -> Int:
+fn max(x: Int, y: Int) -> Int:
     if x > y:
         return x
     return y
 
-def min(x: Int, y: Int) -> Int:
+fn min(x: Int, y: Int) -> Int:
     if x < y:
         return x
     return y
@@ -180,7 +180,7 @@ struct Position:
                         generated_moves.push_back((j + W, j + E, 0))
         return generated_moves
 
-    def rotate(self, nullmove=False) -> Position:
+    fn rotate(self, nullmove: Bool=False) -> Position:
         """Rotates the board, preserving enpassant, unless nullmove."""
         return Position(
             swapboard(self.board), -self.score, self.bc, self.wc,
@@ -230,7 +230,7 @@ struct Position:
         var prom: String = chr(move.get[2, Int]())
         var p: String = self.board[i]
         var q: String = self.board[j]
-        def put(board: String, i: Int, p: String) -> String:
+        fn put(board: String, i: Int, p: String) -> String:
             return board[:i] + p + board[i + 1 :]
         # Copy variables and reset ep and kp
         var board = self.board
@@ -267,7 +267,7 @@ struct Position:
         return Position(board, score, wc, bc, ep, kp).rotate()
 
 
-def board_str_to_numbers(board: String) -> (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int):
+fn board_str_to_numbers(board: String) -> (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int):
     """Encode 120 char board to 30 Ints with 32 bits each."""
     # TODO: Encode the chessboard more efficiently
     var ret: DynamicVector[Int] = DynamicVector[Int]()
@@ -280,7 +280,7 @@ def board_str_to_numbers(board: String) -> (Int, Int, Int, Int, Int, Int, Int, I
         ret.push_back(n)
     return (ret[0], ret[1], ret[2], ret[3], ret[4], ret[5], ret[6], ret[7], ret[8], ret[9], ret[10], ret[11], ret[12], ret[13], ret[14], ret[15], ret[16], ret[17], ret[18], ret[19], ret[20], ret[21], ret[22], ret[23], ret[24], ret[25], ret[26], ret[27], ret[28], ret[29])
 
-def numbers_to_board_str(board: DynamicVector[Int]) -> String:
+fn numbers_to_board_str(board: DynamicVector[Int]) -> String:
     """Decode 30 Ints with 32 bits each to 120 char board."""
     var ret: String = ""
     for i in range(len(board)):
@@ -292,19 +292,19 @@ def numbers_to_board_str(board: DynamicVector[Int]) -> String:
         ret += c1 + c2 + c3 + c4
     return ret
 
-def get_tp_score_key(pos: Position, depth: Int, can_null: Int) -> (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int):
+fn get_tp_score_key(pos: Position, depth: Int, can_null: Int) -> (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int):
     let e = board_str_to_numbers(pos.board)
     return (
         e.get[0, Int](), e.get[1, Int](), e.get[2, Int](), e.get[3, Int](), e.get[4, Int](), e.get[5, Int](), e.get[6, Int](), e.get[7, Int](), e.get[8, Int](), e.get[9, Int](), e.get[10, Int](), e.get[11, Int](), e.get[12, Int](), e.get[13, Int](), e.get[14, Int](), e.get[15, Int](), e.get[16, Int](), e.get[17, Int](), e.get[18, Int](), e.get[19, Int](), e.get[20, Int](), e.get[21, Int](), e.get[22, Int](), e.get[23, Int](), e.get[24, Int](), e.get[25, Int](), e.get[26, Int](), e.get[27, Int](), e.get[28, Int](), e.get[29, Int](), pos.score, pos.wc.get[0, Int](), pos.wc.get[1, Int](), pos.bc.get[0, Int](), pos.bc.get[1, Int](), pos.ep, pos.kp, depth, can_null
     )
 
-def get_tp_move_key(pos: Position) -> (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int):
+fn get_tp_move_key(pos: Position) -> (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int):
     let e = board_str_to_numbers(pos.board)
     return (
         e.get[0, Int](), e.get[1, Int](), e.get[2, Int](), e.get[3, Int](), e.get[4, Int](), e.get[5, Int](), e.get[6, Int](), e.get[7, Int](), e.get[8, Int](), e.get[9, Int](), e.get[10, Int](), e.get[11, Int](), e.get[12, Int](), e.get[13, Int](), e.get[14, Int](), e.get[15, Int](), e.get[16, Int](), e.get[17, Int](), e.get[18, Int](), e.get[19, Int](), e.get[20, Int](), e.get[21, Int](), e.get[22, Int](), e.get[23, Int](), e.get[24, Int](), e.get[25, Int](), e.get[26, Int](), e.get[27, Int](), e.get[28, Int](), e.get[29, Int](), pos.score, pos.wc.get[0, Int](), pos.wc.get[1, Int](), pos.bc.get[0, Int](), pos.bc.get[1, Int](), pos.ep, pos.kp
     )
 
-def get_history_key(pos: Position) -> (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int):
+fn get_history_key(pos: Position) -> (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int):
     let e = board_str_to_numbers(pos.board)
     return (
         e.get[0, Int](), e.get[1, Int](), e.get[2, Int](), e.get[3, Int](), e.get[4, Int](), e.get[5, Int](), e.get[6, Int](), e.get[7, Int](), e.get[8, Int](), e.get[9, Int](), e.get[10, Int](), e.get[11, Int](), e.get[12, Int](), e.get[13, Int](), e.get[14, Int](), e.get[15, Int](), e.get[16, Int](), e.get[17, Int](), e.get[18, Int](), e.get[19, Int](), e.get[20, Int](), e.get[21, Int](), e.get[22, Int](), e.get[23, Int](), e.get[24, Int](), e.get[25, Int](), e.get[26, Int](), e.get[27, Int](), e.get[28, Int](), e.get[29, Int](), pos.score, pos.wc.get[0, Int](), pos.wc.get[1, Int](), pos.bc.get[0, Int](), pos.bc.get[1, Int](), pos.ep, pos.kp
@@ -328,7 +328,7 @@ def py_position_to_position(pos: PythonObject) -> Position:
 def py_move_to_move(move: PythonObject) -> (Int, Int, Int):
     return move[0].to_float64().to_int(), move[1].to_float64().to_int(), move[2].to_float64().to_int() # TODO: Fix it
 
-def print_move(move: (Int, Int, Int)):
+fn print_move(move: (Int, Int, Int)):
     let a: String =  render(move.get[0, Int]()) + render(move.get[1, Int]()) + lower(chr(move.get[2, Int]()))
     print(a)
 
@@ -572,14 +572,13 @@ struct Searcher:
             gamma = (lower + upper + 1) // 2
         return moves
 
-
-def parse(c: String) -> Int:
+fn parse(c: String) -> Int:
     let A1 = 91
-    fil = ord(c[0]) - ord("a")
-    rank = ord(c[1]) - ord('0') - 1
+    let fil = ord(c[0]) - ord("a")
+    let rank = ord(c[1]) - ord('0') - 1
     return A1 + fil - 10 * rank
 
-def render(i: Int) -> String:
+fn render(i: Int) -> String:
     let A1 = 91
     let rank = (i - A1) // 10
     let fil = (i - A1) % 10
@@ -587,6 +586,34 @@ def render(i: Int) -> String:
     ret += (-rank + 1)
     return ret
 
+def go(inout hist: PythonObject, inout args: PythonObject, depth: Int=3):
+    let py = Python.import_module("builtins")
+    # var 1, btime, winc, binc = [int(a) / 1000 for a in args[2::2]]
+    let wtime: Int = 2
+    let btime: Int = 2
+    let winc: Int = 2
+    let binc: Int = 2
+    # TODO: Stop when thinking too long
+
+    var move_str: String = ""
+    for depth in range(1, depth):
+        var searcher: Searcher = Searcher()
+        # TODO: Stop when in the middle of the depth
+        let moves: DynamicVector[(Int, Int, (Int, Int, Int))] = searcher.search(hist, depth)
+        for i in range(len(moves)):
+            let gamma: Int = moves[i].get[0, Int]()
+            let score: Int = moves[i].get[1, Int]()
+            let move: (Int, Int, Int) = moves[i].get[2, (Int, Int, Int)]()
+            # The only way we can be sure to have the real move in tp_move,
+            # is if we have just failed high.
+            if score >= gamma:
+                var i = move.get[0, Int]()
+                var j = move.get[1, Int]()
+                if py.len(hist) % 2 == 0:
+                    i, j = 119 - i, 119 - j
+                move_str = render(i) + render(j) + lower(chr(move.get[2, Int]()))
+                print("info depth", depth, "score cp", score, "pv", move_str)
+    print("bestmove", move_str or '(none)')
 
 def main():
     let py = Python.import_module("builtins")
@@ -642,31 +669,17 @@ def main():
                     hist.append(get_history_key(new_pos))
                     ply += 1
             elif args[0] == "go":
-                # var 1, btime, winc, binc = [int(a) / 1000 for a in args[2::2]]
-                let wtime: Int = 2
-                let btime: Int = 2
-                let winc: Int = 2
-                let binc: Int = 2
-                # TODO: Stop when thinking too long
-
-                var move_str: String = ""
-                for depth in range(1, 3):
-                    var searcher: Searcher = Searcher()
-                    # TODO: Stop when in the middle of the depth
-                    let moves: DynamicVector[(Int, Int, (Int, Int, Int))] = searcher.search(hist, depth)
-                    for i in range(len(moves)):
-                        let gamma: Int = moves[i].get[0, Int]()
-                        let score: Int = moves[i].get[1, Int]()
-                        let move: (Int, Int, Int) = moves[i].get[2, (Int, Int, Int)]()
-                        # The only way we can be sure to have the real move in tp_move,
-                        # is if we have just failed high.
-                        if score >= gamma:
-                            var i = move.get[0, Int]()
-                            var j = move.get[1, Int]()
-                            if py.len(hist) % 2 == 0:
-                                i, j = 119 - i, 119 - j
-                            move_str = render(i) + render(j) + lower(chr(move.get[2, Int]()))
-                            print("info depth", depth, "score cp", score, "pv", move_str)
-                print("bestmove", move_str or '(none)')
+                go(hist, args, depth=3)
+            elif args[0] == "speedtest":
+                import time
+                let start = time.now()
+                hist = py.list()
+                hist.append(init_pos)
+                let loop_start = time.now()
+                go(hist, args, depth=3)
+                let loop_end = time.now()
+                print("Time:", (loop_end - loop_start) / 1000000000, "s")
+            else:
+                print("Unknown command:", args)
         except e:
             print(e)

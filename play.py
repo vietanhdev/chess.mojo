@@ -1,11 +1,8 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
+#!/usr/bin/env python
 import chess.engine
 import json
 import argparse
 import random
-import time
 import sys
 import asyncio
 import pathlib

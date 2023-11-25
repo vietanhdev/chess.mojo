@@ -1,6 +1,4 @@
 #!/usr/bin/env mojo
-
-import time
 from python import Python
 
 
@@ -591,7 +589,6 @@ def render(i: Int) -> String:
 
 
 def main():
-    import time
     let py = Python.import_module("builtins")
     initial = (
         "         \n"  #   0 -  9
@@ -636,7 +633,7 @@ def main():
                     var prom: Int = 0
                     if py.len(move) > 4:
                         prom = ord(upper(chr(py.ord(move[4]).to_float64().to_int())))
-                    if ply % 2 == 1:
+                    if ply % 2 == 1: # Flipped board
                         i = 119 - i
                         j = 119 - j
                     let last_pos: PythonObject = hist[py.len(hist) - 1]
@@ -645,14 +642,13 @@ def main():
                     hist.append(get_history_key(new_pos))
                     ply += 1
             elif args[0] == "go":
-                # var wtime: Int = 2000,btime, winc, binc = [int(a) / 1000 for a in args[2::2]]
-                let wtime: Int = 2000
-                let btime: Int = 2000
-                let winc: Int = 2000
-                let binc: Int = 2000
+                # var 1, btime, winc, binc = [int(a) / 1000 for a in args[2::2]]
+                let wtime: Int = 2
+                let btime: Int = 2
+                let winc: Int = 2
+                let binc: Int = 2
                 # TODO: Stop when thinking too long
 
-                # start = time.time()
                 var move_str: String = ""
                 for depth in range(1, 3):
                     var searcher: Searcher = Searcher()
